@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         const page = parseInt(searchParams.get("page") || "1")
 
         // Build query
-        const query: any = { syncStatus: "active" }
+        const query: any = { syncStatus: { $in: ["active", "archived"] } }
 
         if (language && language !== "All") {
             query.language = language

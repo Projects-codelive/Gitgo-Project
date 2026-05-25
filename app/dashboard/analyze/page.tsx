@@ -64,6 +64,9 @@ function AnalyzeContent() {
       })
 
       if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error("Rate limit or token limit exceeded on the Groq free tier. Please try again in a minute, or analyze a smaller repository.")
+        }
         let errorMsg = `Request failed with status ${response.status}`
         try {
           const errorData = await response.json()

@@ -84,9 +84,20 @@ async function callGroqWithErrorHandling(
     try {
         return await client.chat.completions.create(params);
     } catch (error: any) {
-        if (error?.error?.code === "rate_limit_exceeded" || error?.status === 429) {
-            const errorMsg = error?.error?.message || "Rate limit exceeded";
-            console.error("[Groq] Rate limit hit:", errorMsg);
+        const errStatus = error?.status || error?.statusCode;
+        const errMsg = error?.message || "";
+        const errCode = error?.error?.code || error?.code;
+
+        if (
+            errStatus === 429 ||
+            errStatus === 413 ||
+            errCode === "rate_limit_exceeded" ||
+            errMsg.includes("rate_limit_exceeded") ||
+            errMsg.includes("Rate limit") ||
+            errMsg.includes("rate limit")
+        ) {
+            const errorMsg = error?.error?.message || errMsg || "Rate/Token limit exceeded";
+            console.error("[Groq] Rate/Token limit hit:", errorMsg);
             throw new Error(`429 RateLimitExhausted: ${errorMsg}`);
         }
         throw error;
@@ -268,14 +279,14 @@ Return a JSON object with EXACTLY these keys:
 
 ## Project File Tree
 \`\`\`
-${truncate(fileTreeStr, 4000)}
+${truncate(fileTreeStr, 1500)}
 \`\`\`
 
 ## Tech Stack
 ${formatTechStack(techStack)}
 
 ## Key File Contents
-${truncate(keyFilesStr, 25000)}
+${truncate(keyFilesStr, 8000)}
 
 REMEMBER: Only include what you can actually verify from the provided code. Do not hallucinate infrastructure or services.
 
@@ -371,11 +382,11 @@ Return ONLY a valid JSON array. No markdown, no explanation outside the JSON arr
 ${formatTechStack(techStack)}
 
 ## Source Files (README + routing files)
-${truncate(sourceStr, 25000)}
+${truncate(sourceStr, 8000)}
 
 ## App Directory Structure (for inference)
 \`\`\`
-${truncate(appDirFiles, 2000)}
+${truncate(appDirFiles, 1500)}
 \`\`\`
 
 Each array item MUST have these exact keys:
@@ -442,7 +453,7 @@ Return ONLY a JSON array of strings containing up to a maximum of 10 file paths.
 ${targetRoute}
 
 ### 📂 REPOSITORY FILE PATHS
-${truncate(filePaths.join("\n"), 30000)}
+${truncate(filePaths.join("\n"), 6000)}
 
 Return a JSON array of up to 10 strings representing the exact file paths.`;
 
@@ -523,7 +534,7 @@ CRITICAL: DO NOT WRITE OR SUMMARIZE ANY CODE YOURSELF in the Code Snippet sectio
 ${targetRoute}
 
 ### 📂 CODEBASE_FILES
-${truncate(codebaseFiles, 28000)}
+${truncate(codebaseFiles, 8000)}
 
 Output exactly the two headers ### FLOW_VISUALIZATION and ### EXECUTION_TRACE followed by their content.`;
 

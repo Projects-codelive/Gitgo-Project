@@ -118,10 +118,10 @@ export function RepoCard({
             variant="secondary" 
             className="border-green-500/30 bg-green-500/10 text-green-400 text-sm font-semibold"
           >
-            {goodFirstIssues} good first {goodFirstIssues === 1 ? 'issue' : 'issues'}
+            {goodFirstIssues} active {goodFirstIssues === 1 ? 'issue' : 'issues'}
           </Badge>
         ) : (
-          <span className="text-xs text-muted-foreground">No good first issues</span>
+          <span className="text-xs text-muted-foreground">No active issues</span>
         )}
 
         <Button

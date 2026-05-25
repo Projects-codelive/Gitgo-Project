@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Code2,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { formatDistanceToNow } from "date-fns"
@@ -111,9 +112,22 @@ export function RepoDetailsModal({
     setIssuesError(null)
     try {
       const repoUrl = `https://github.com/${owner}/${repo}`
-      // Fetch all open issues - we'll filter client-side
+      const labels = [
+        "good first issue",
+        "good-first-issue",
+        "good first issue (taken)",
+        "beginner friendly",
+        "beginner-friendly",
+        "help wanted",
+        "help-wanted",
+        "bug",
+        "confirmed-bug",
+        "Type: Bug",
+        "Difficulty: starter"
+      ].join(",")
+      
       const response = await fetch(
-        `/api/issues?repoUrl=${encodeURIComponent(repoUrl)}&type=issue&sort=created-desc`
+        `/api/issues?repoUrl=${encodeURIComponent(repoUrl)}&type=issue&sort=created-desc&labels=${encodeURIComponent(labels)}`
       )
       
       if (!response.ok) {
@@ -142,10 +156,12 @@ export function RepoDetailsModal({
       return labelNames.some(name => 
         name === "good first issue" ||
         name === "good-first-issue" ||
+        name === "good first issue (taken)" ||
         name === "beginner friendly" ||
         name === "beginner-friendly" ||
         name === "help wanted" ||
-        name === "help-wanted"
+        name === "help-wanted" ||
+        name === "difficulty: starter"
       )
     }
     if (issueFilter === "help-wanted") {
@@ -156,14 +172,16 @@ export function RepoDetailsModal({
     }
     if (issueFilter === "bug") {
       // Only show bugs that are also marked as beginner-friendly
-      const isBug = labelNames.includes("bug")
+      const isBug = labelNames.includes("bug") || labelNames.includes("confirmed-bug") || labelNames.includes("type: bug")
       const isBeginner = labelNames.some(name => 
         name === "good first issue" ||
         name === "good-first-issue" ||
+        name === "good first issue (taken)" ||
         name === "beginner friendly" ||
         name === "beginner-friendly" ||
         name === "help wanted" ||
-        name === "help-wanted"
+        name === "help-wanted" ||
+        name === "difficulty: starter"
       )
       return isBug && isBeginner
     }
@@ -171,11 +189,11 @@ export function RepoDetailsModal({
     return false
   })
 
-  const fetchRepoDetails = async () => {
+  const fetchRepoDetails = async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/github/repo/${owner}/${repo}`)
+      const response = await fetch(`/api/github/repo/${owner}/${repo}${force ? "?refresh=true" : ""}`)
       if (!response.ok) {
         throw new Error("Failed to fetch repository details")
       }
@@ -187,7 +205,7 @@ export function RepoDetailsModal({
       if (data.cached) {
         toast.success("Repository details loaded from cache")
       } else {
-        toast.success("Repository details loaded")
+        toast.success(force ? "Repository details refreshed" : "Repository details loaded")
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred"
@@ -196,6 +214,11 @@ export function RepoDetailsModal({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRefresh = () => {
+    fetchRepoDetails(true)
+    fetchIssues()
   }
 
   const copyToClipboard = (text: string, type: string) => {
@@ -277,7 +300,7 @@ export function RepoDetailsModal({
         )}
 
         {details && !loading && (
-          <div className="space-y-4 overflow-y-auto pr-2">
+          <div className="flex flex-col flex-1 overflow-hidden space-y-4">
             {/* Cache indicator */}
             {cached && cachedAt && (
               <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
@@ -289,28 +312,42 @@ export function RepoDetailsModal({
             )}
 
             {/* Repository Header */}
-            <div className="space-y-3">
+            <div className="border-b border-border pb-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-foreground">
                     {details.repository.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {details.repository.description || "No description"}
                   </p>
                 </div>
-                <Button asChild size="sm">
-                  <a
-                    href={details.repository.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={loading}
                   >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open in GitHub
-                  </a>
-                </Button>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <Button asChild size="sm">
+                    <a
+                      href={details.repository.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open in GitHub
+                    </a>
+                  </Button>
+                </div>
               </div>
+            </div>
 
+            {/* Scrollable details container */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {/* Stats */}
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
@@ -345,11 +382,10 @@ export function RepoDetailsModal({
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* Links Section */}
-            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
-              <h4 className="text-sm font-semibold text-foreground">Quick Links</h4>
+              {/* Links Section */}
+              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
+                <h4 className="text-sm font-semibold text-foreground">Quick Links</h4>
               <div className="grid gap-2">
                 {/* Clone URLs */}
                 <div className="flex items-center gap-2">
@@ -443,7 +479,8 @@ export function RepoDetailsModal({
                         (name.includes("good") && name.includes("first")) ||
                         name.includes("beginner") ||
                         name === "help wanted" ||
-                        name === "help-wanted"
+                        name === "help-wanted" ||
+                        name.includes("starter")
                       )
                     }).length})
                   </Button>
@@ -461,11 +498,12 @@ export function RepoDetailsModal({
                   >
                     Beginner Bugs ({issues.filter(i => {
                       const labelNames = i.labels.map(l => l.name.toLowerCase())
-                      const isBug = labelNames.includes("bug")
+                      const isBug = labelNames.includes("bug") || labelNames.includes("confirmed-bug") || labelNames.includes("type: bug")
                       const isBeginner = labelNames.some(name => 
                         (name.includes("good") && name.includes("first")) ||
                         name.includes("beginner") ||
-                        name.includes("help") && name.includes("wanted")
+                        (name.includes("help") && name.includes("wanted")) ||
+                        name.includes("starter")
                       )
                       return isBug && isBeginner
                     }).length})
@@ -590,6 +628,7 @@ export function RepoDetailsModal({
                 </ScrollArea>
               </TabsContent>
             </Tabs>
+          </div>
           </div>
         )}
       </DialogContent>

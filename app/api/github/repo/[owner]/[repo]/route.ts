@@ -27,10 +27,13 @@ export async function GET(
     // Connect to MongoDB
     await connectDB()
 
+    const { searchParams } = new URL(request.url)
+    const forceRefresh = searchParams.get("refresh") === "true"
+
     // Check if we have cached data
     const cachedRepo = await RepositoryDetails.findOne({ fullName })
 
-    if (cachedRepo) {
+    if (cachedRepo && !forceRefresh) {
       const cacheAge = Date.now() - new Date(cachedRepo.lastFetchedAt).getTime()
       
       // If cache is fresh (less than 24 hours old), return it
@@ -47,6 +50,8 @@ export async function GET(
       }
       
       console.log(`[Repo Details] ⚠️ Cache expired for ${fullName}, refreshing...`)
+    } else if (forceRefresh) {
+      console.log(`[Repo Details] 🔄 Force refresh requested for ${fullName}, fetching from GitHub...`)
     } else {
       console.log(`[Repo Details] ❌ Cache miss for ${fullName}, fetching from GitHub...`)
     }
@@ -199,7 +204,7 @@ export async function GET(
       { fullName },
       {
         ...repositoryDetails,
-        cachedAt: cachedRepo ? cachedRepo.cachedAt : new Date(),
+        cachedAt: (cachedRepo && !forceRefresh) ? cachedRepo.cachedAt : new Date(),
       },
       { upsert: true, new: true }
     )

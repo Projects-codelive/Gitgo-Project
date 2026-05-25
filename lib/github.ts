@@ -635,6 +635,7 @@ export async function getFilteredIssues(
     const labelsQuery = options.labels.map(l => `"${l}"`).join(",")
     q += ` label:${labelsQuery}`
   }
+  q += ` is:open`
 
   let sortParam: "created" | "updated" | "comments" = "created"
   let orderParam: "desc" | "asc" = "desc"

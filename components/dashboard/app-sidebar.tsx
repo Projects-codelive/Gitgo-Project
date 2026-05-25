@@ -85,12 +85,12 @@ const mainNav = [
     icon: Users,
     description: "Connect with other developers and join discussions",
   },
-  {
-    title: "Portfolio",
-    href: "/dashboard/portfolio",
-    icon: FileUser,
-    description: "Generate and customize your developer portfolio",
-  },
+  // {
+  //   title: "Portfolio",
+  //   href: "/dashboard/portfolio",
+  //   icon: FileUser,
+  //   description: "Generate and customize your developer portfolio",
+  // },
 ]
 
 const filters = [

@@ -276,7 +276,12 @@ async function performAnalysis(
         const message = err instanceof Error ? err.message : "An unknown error occurred.";
 
         // Handle Groq token limit exhausted
-        if (message.includes("429") || message.includes("RateLimitExhausted")) {
+        if (
+            message.includes("429") ||
+            message.includes("RateLimitExhausted") ||
+            message.includes("rate_limit_exceeded") ||
+            message.includes("413")
+        ) {
             console.warn("[/api/analyze] 🔒 Groq daily token limit exhausted — returning rateLimitExceeded.");
             return NextResponse.json({ rateLimitExceeded: true }, { status: 402 });
         }
